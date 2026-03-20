@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>请假申请 - 考勤管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边导航栏 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-clock"></i>
+                    <span>考勤系统</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>打卡签到</span>
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a href="leave.html">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>请假申请</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="history.html">
+                        <i class="fas fa-history"></i>
+                        <span>打卡记录</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="approval.html">
+                        <i class="fas fa-check-circle"></i>
+                        <span>审批管理</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <p class="user-name">张三</p>
+                        <p class="user-role">技术部 - 工程师</p>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">请假申请</h1>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showLeaveModal()">
+                        <i class="fas fa-plus"></i>
+                        新建申请
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- 假期余额卡片 -->
+                <div class="leave-balance-section">
+                    <h3>假期余额</h3>
+                    <div class="balance-grid">
+                        <div class="balance-card">
+                            <div class="balance-icon annual">
+                                <i class="fas fa-umbrella-beach"></i>
+                            </div>
+                            <div class="balance-info">
+                                <span class="balance-value">10<span class="balance-unit">天</span></span>
+                                <span class="balance-label">年假余额</span>
+                            </div>
+                        </div>
+                        <div class="balance-card">
+                            <div class="balance-icon sick">
+                                <i class="fas fa-hospital"></i>
+                            </div>
+                            <div class="balance-info">
+                                <span class="balance-value">无限制</span>
+                                <span class="balance-label">病假</span>
+                            </div>
+                        </div>
+                        <div class="balance-card">
+                            <div class="balance-icon personal">
+                                <i class="fas fa-user-clock"></i>
+                            </div>
+                            <div class="balance-info">
+                                <span class="balance-value">5<span class="balance-unit">天</span></span>
+                                <span class="balance-label">事假额度</span>
+                            </div>
+                        </div>
+                        <div class="balance-card">
+                            <div class="balance-icon other">
+                                <i class="fas fa-heart"></i>
+                            </div>
+                            <div class="balance-info">
+                                <span class="balance-value">按政策</span>
+                                <span class="balance-label">婚/产/丧假</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 请假申请列表 -->
+                <div class="leave-list-section">
+                    <div class="section-header">
+                        <h3>我的申请记录</h3>
+                        <div class="filter-tabs">
+                            <button class="tab-btn active" data-filter="all">全部</button>
+                            <button class="tab-btn" data-filter="pending">待审批</button>
+                            <button class="tab-btn" data-filter="approved">已批准</button>
+                            <button class="tab-btn" data-filter="rejected">已拒绝</button>
+                        </div>
+                    </div>
+                    <div class="leave-list">
+                        <div class="leave-item" data-status="approved">
+                            <div class="leave-type">
+                                <div class="type-icon annual">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                </div>
+                                <div class="type-info">
+                                    <span class="type-name">年假</span>
+                                    <span class="type-days">3天</span>
+                                </div>
+                            </div>
+                            <div class="leave-date">
+                                <span class="date-range">2024-03-25 至 2024-03-27</span>
+                                <span class="date-applied">申请于 2024-03-20</span>
+                            </div>
+                            <div class="leave-status">
+                                <span class="status-badge approved">已批准</span>
+                            </div>
+                            <div class="leave-actions">
+                                <button class="btn-icon" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="leave-item" data-status="pending">
+                            <div class="leave-type">
+                                <div class="type-icon sick">
+                                    <i class="fas fa-hospital"></i>
+                                </div>
+                                <div class="type-info">
+                                    <span class="type-name">病假</span>
+                                    <span class="type-days">1天</span>
+                                </div>
+                            </div>
+                            <div class="leave-date">
+                                <span class="date-range">2024-03-22</span>
+                                <span class="date-applied">申请于 2024-03-21</span>
+                            </div>
+                            <div class="leave-status">
+                                <span class="status-badge pending">待审批</span>
+                            </div>
+                            <div class="leave-actions">
+                                <button class="btn-icon" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn-icon" title="撤销申请" onclick="cancelLeave(this)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="leave-item" data-status="rejected">
+                            <div class="leave-type">
+                                <div class="type-icon personal">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div class="type-info">
+                                    <span class="type-name">事假</span>
+                                    <span class="type-days">2天</span>
+                                </div>
+                            </div>
+                            <div class="leave-date">
+                                <span class="date-range">2024-03-10 至 2024-03-11</span>
+                                <span class="date-applied">申请于 2024-03-08</span>
+                            </div>
+                            <div class="leave-status">
+                                <span class="status-badge rejected">已拒绝</span>
+                            </div>
+                            <div class="leave-actions">
+                                <button class="btn-icon" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="leave-item" data-status="approved">
+                            <div class="leave-type">
+                                <div class="type-icon annual">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                </div>
+                                <div class="type-info">
+                                    <span class="type-name">年假</span>
+                                    <span class="type-days">5天</span>
+                                </div>
+                            </div>
+                            <div class="leave-date">
+                                <span class="date-range">2024-02-05 至 2024-02-09</span>
+                                <span class="date-applied">申请于 2024-01-20</span>
+                            </div>
+                            <div class="leave-status">
+                                <span class="status-badge approved">已批准</span>
+                            </div>
+                            <div class="leave-actions">
+                                <button class="btn-icon" title="查看详情">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 紧急请假提示 -->
+                <div class="emergency-notice">
+                    <div class="notice-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <div class="notice-content">
+                        <h4>紧急请假</h4>
+                        <p>如遇突发情况无法提前申请，可在事后24小时内补交请假申请，请在说明中注明"紧急请假"。</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 请假申请弹窗 -->
+    <div class="modal" id="leaveModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>新建请假申请</h3>
+                <button class="close-btn" onclick="closeLeaveModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="leaveForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>请假类型 <span class="required">*</span></label>
+                            <select class="form-control" id="leaveType" required>
+                                <option value="">请选择</option>
+                                <option value="annual">年假</option>
+                                <option value="sick">病假</option>
+                                <option value="personal">事假</option>
+                                <option value="marriage">婚假</option>
+                                <option value="maternity">产假</option>
+                                <option value="bereavement">丧假</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>是否紧急请假</label>
+                            <div class="checkbox-wrapper">
+                                <input type="checkbox" id="isEmergency">
+                                <label for="isEmergency">是，事后补交申请</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>开始日期 <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="startDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>结束日期 <span class="required">*</span></label>
+                            <input type="date" class="form-control" id="endDate" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>请假天数</label>
+                            <input type="text" class="form-control" id="leaveDays" readonly placeholder="自动计算">
+                        </div>
+                        <div class="form-group">
+                            <label>审批人 <span class="required">*</span></label>
+                            <select class="form-control" id="approver" required>
+                                <option value="">请选择</option>
+                                <option value="manager1">李经理（直属领导）</option>
+                                <option value="manager2">王总监</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>请假事由 <span class="required">*</span></label>
+                        <textarea class="form-control" rows="4" placeholder="请详细说明请假原因..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>附件（可选）</label>
+                        <div class="file-upload">
+                            <input type="file" id="attachment" hidden>
+                            <label for="attachment" class="file-upload-btn">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <span>点击上传文件</span>
+                            </label>
+                            <span class="file-name" id="fileName"></span>
+                        </div>
+                        <p class="form-hint">支持图片、PDF格式，最大5MB</p>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeLeaveModal()">取消</button>
+                <button class="btn-primary" onclick="submitLeave()">提交申请</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 请假详情弹窗 -->
+    <div class="modal" id="leaveDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>请假详情</h3>
+                <button class="close-btn" onclick="closeLeaveDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-timeline">
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">提交申请</span>
+                            <span class="timeline-time">2024-03-20 09:30</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">直属领导审批</span>
+                            <span class="timeline-time">2024-03-20 14:20</span>
+                            <span class="timeline-status approved">已批准</span>
+                        </div>
+                    </div>
+                    <div class="timeline-item completed">
+                        <div class="timeline-dot"></div>
+                        <div class="timeline-content">
+                            <span class="timeline-title">HR备案</span>
+                            <span class="timeline-time">2024-03-20 16:00</span>
+                            <span class="timeline-status approved">已完成</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="detail-info">
+                    <div class="info-row">
+                        <label>请假类型：</label>
+                        <span>年假</span>
+                    </div>
+                    <div class="info-row">
+                        <label>请假时间：</label>
+                        <span>2024-03-25 至 2024-03-27（共3天）</span>
+                    </div>
+                    <div class="info-row">
+                        <label>请假事由：</label>
+                        <span>回家探亲</span>
+                    </div>
+                    <div class="info-row">
+                        <label>审批人：</label>
+                        <span>李经理</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeLeaveDetailModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

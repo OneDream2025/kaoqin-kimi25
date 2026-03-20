@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打卡记录 - 考勤管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边导航栏 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-clock"></i>
+                    <span>考勤系统</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>打卡签到</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="leave.html">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>请假申请</span>
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a href="history.html">
+                        <i class="fas fa-history"></i>
+                        <span>打卡记录</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="approval.html">
+                        <i class="fas fa-check-circle"></i>
+                        <span>审批管理</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <p class="user-name">张三</p>
+                        <p class="user-role">技术部 - 工程师</p>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">打卡记录</h1>
+                <div class="header-actions">
+                    <button class="btn-secondary" onclick="exportData()">
+                        <i class="fas fa-download"></i>
+                        导出记录
+                    </button>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- 筛选栏 -->
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>时间范围</label>
+                        <select class="form-control" id="timeRange">
+                            <option value="week">本周</option>
+                            <option value="month" selected>本月</option>
+                            <option value="quarter">本季度</option>
+                            <option value="year">本年</option>
+                            <option value="custom">自定义</option>
+                        </select>
+                    </div>
+                    <div class="filter-group custom-date" style="display: none;">
+                        <label>开始日期</label>
+                        <input type="date" class="form-control" id="customStartDate">
+                    </div>
+                    <div class="filter-group custom-date" style="display: none;">
+                        <label>结束日期</label>
+                        <input type="date" class="form-control" id="customEndDate">
+                    </div>
+                    <div class="filter-group">
+                        <label>打卡状态</label>
+                        <select class="form-control" id="checkinStatus">
+                            <option value="all">全部</option>
+                            <option value="normal">正常</option>
+                            <option value="late">迟到</option>
+                            <option value="early">早退</option>
+                            <option value="absent">缺勤</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="searchRecords()">
+                        <i class="fas fa-search"></i>
+                        查询
+                    </button>
+                </div>
+
+                <!-- 统计概览 -->
+                <div class="history-stats">
+                    <div class="stat-box">
+                        <span class="stat-number">21</span>
+                        <span class="stat-desc">应出勤天数</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">18</span>
+                        <span class="stat-desc">实际出勤</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">2</span>
+                        <span class="stat-desc">迟到次数</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">1</span>
+                        <span class="stat-desc">早退次数</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">0</span>
+                        <span class="stat-desc">缺勤天数</span>
+                    </div>
+                    <div class="stat-box">
+                        <span class="stat-number">168<span class="unit">h</span></span>
+                        <span class="stat-desc">工作时长</span>
+                    </div>
+                </div>
+
+                <!-- 打卡记录表格 -->
+                <div class="history-table-section">
+                    <div class="table-header">
+                        <h3>详细记录</h3>
+                        <div class="table-actions">
+                            <span class="records-count">共 21 条记录</span>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>日期</th>
+                                    <th>星期</th>
+                                    <th>上班时间</th>
+                                    <th>下班时间</th>
+                                    <th>工作时长</th>
+                                    <th>打卡方式</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>2024-03-20</td>
+                                    <td>周三</td>
+                                    <td>08:55</td>
+                                    <td>18:05</td>
+                                    <td>9小时10分</td>
+                                    <td><span class="method-tag face"><i class="fas fa-user-circle"></i> 人脸</span></td>
+                                    <td><span class="status-tag normal">正常</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-20')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-19</td>
+                                    <td>周二</td>
+                                    <td>09:10</td>
+                                    <td>18:00</td>
+                                    <td>8小时50分</td>
+                                    <td><span class="method-tag fingerprint"><i class="fas fa-fingerprint"></i> 指纹</span></td>
+                                    <td><span class="status-tag late">迟到</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-19')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-18</td>
+                                    <td>周一</td>
+                                    <td>08:50</td>
+                                    <td>17:30</td>
+                                    <td>8小时40分</td>
+                                    <td><span class="method-tag gps"><i class="fas fa-map-marker-alt"></i> GPS</span></td>
+                                    <td><span class="status-tag early">早退</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-18')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-15</td>
+                                    <td>周五</td>
+                                    <td>--:--</td>
+                                    <td>--:--</td>
+                                    <td>--</td>
+                                    <td>--</td>
+                                    <td><span class="status-tag leave">请假</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-15')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-14</td>
+                                    <td>周四</td>
+                                    <td>08:45</td>
+                                    <td>18:10</td>
+                                    <td>9小时25分</td>
+                                    <td><span class="method-tag qrcode"><i class="fas fa-qrcode"></i> 二维码</span></td>
+                                    <td><span class="status-tag normal">正常</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-14')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-13</td>
+                                    <td>周三</td>
+                                    <td>08:52</td>
+                                    <td>18:00</td>
+                                    <td>9小时08分</td>
+                                    <td><span class="method-tag face"><i class="fas fa-user-circle"></i> 人脸</span></td>
+                                    <td><span class="status-tag normal">正常</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-13')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-12</td>
+                                    <td>周二</td>
+                                    <td>09:05</td>
+                                    <td>18:05</td>
+                                    <td>9小时00分</td>
+                                    <td><span class="method-tag face"><i class="fas fa-user-circle"></i> 人脸</span></td>
+                                    <td><span class="status-tag late">迟到</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-12')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>2024-03-11</td>
+                                    <td>周一</td>
+                                    <td>08:48</td>
+                                    <td>18:15</td>
+                                    <td>9小时27分</td>
+                                    <td><span class="method-tag fingerprint"><i class="fas fa-fingerprint"></i> 指纹</span></td>
+                                    <td><span class="status-tag normal">正常</span></td>
+                                    <td>
+                                        <button class="btn-icon" onclick="showDetail('2024-03-11')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 分页 -->
+                    <div class="pagination">
+                        <button class="page-btn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">3</button>
+                        <span class="page-ellipsis">...</span>
+                        <button class="page-btn">8</button>
+                        <button class="page-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 日历视图 -->
+                <div class="calendar-section">
+                    <div class="section-header">
+                        <h3>日历视图</h3>
+                        <div class="calendar-nav">
+                            <button class="btn-icon" onclick="prevMonth()">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <span class="current-month">2024年3月</span>
+                            <button class="btn-icon" onclick="nextMonth()">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="calendar-weekdays">
+                            <span>日</span>
+                            <span>一</span>
+                            <span>二</span>
+                            <span>三</span>
+                            <span>四</span>
+                            <span>五</span>
+                            <span>六</span>
+                        </div>
+                        <div class="calendar-days">
+                            <div class="calendar-day other-month">
+                                <span class="day-number">25</span>
+                            </div>
+                            <div class="calendar-day other-month">
+                                <span class="day-number">26</span>
+                            </div>
+                            <div class="calendar-day other-month">
+                                <span class="day-number">27</span>
+                            </div>
+                            <div class="calendar-day other-month">
+                                <span class="day-number">28</span>
+                            </div>
+                            <div class="calendar-day other-month">
+                                <span class="day-number">29</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">1</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">2</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">3</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">4</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">5</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">6</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">7</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">8</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">9</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">10</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">11</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">12</span>
+                                <span class="day-status late"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">13</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">14</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">15</span>
+                                <span class="day-status leave"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">16</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">17</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">18</span>
+                                <span class="day-status early"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">19</span>
+                                <span class="day-status late"></span>
+                            </div>
+                            <div class="calendar-day today">
+                                <span class="day-number">20</span>
+                                <span class="day-status normal"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">21</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">22</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">23</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">24</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">25</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">26</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">27</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">28</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">29</span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">30</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                            <div class="calendar-day">
+                                <span class="day-number">31</span>
+                                <span class="day-status rest"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="calendar-legend">
+                        <div class="legend-item">
+                            <span class="legend-dot normal"></span>
+                            <span>正常</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot late"></span>
+                            <span>迟到</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot early"></span>
+                            <span>早退</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot absent"></span>
+                            <span>缺勤</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot leave"></span>
+                            <span>请假</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-dot rest"></span>
+                            <span>休息</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 打卡详情弹窗 -->
+    <div class="modal" id="detailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>打卡详情</h3>
+                <button class="close-btn" onclick="closeDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="detail-section">
+                    <h4>上班打卡</h4>
+                    <div class="detail-row">
+                        <label>打卡时间：</label>
+                        <span>08:55:32</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>打卡方式：</label>
+                        <span><i class="fas fa-user-circle"></i> 人脸识别</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>打卡地点：</label>
+                        <span>公司总部 - 一楼大厅</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>GPS坐标：</label>
+                        <span>116.4074, 39.9042</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>设备信息：</label>
+                        <span>考勤机 #A001</span>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>下班打卡</h4>
+                    <div class="detail-row">
+                        <label>打卡时间：</label>
+                        <span>18:05:18</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>打卡方式：</label>
+                        <span><i class="fas fa-user-circle"></i> 人脸识别</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>打卡地点：</label>
+                        <span>公司总部 - 一楼大厅</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>GPS坐标：</label>
+                        <span>116.4074, 39.9042</span>
+                    </div>
+                </div>
+                <div class="detail-section">
+                    <h4>统计信息</h4>
+                    <div class="detail-row">
+                        <label>工作时长：</label>
+                        <span>9小时10分钟</span>
+                    </div>
+                    <div class="detail-row">
+                        <label>考勤状态：</label>
+                        <span class="status-tag normal">正常</span>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDetailModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

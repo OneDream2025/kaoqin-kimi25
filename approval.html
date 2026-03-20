@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>审批管理 - 考勤管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 侧边导航栏 -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-clock"></i>
+                    <span>考勤系统</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>打卡签到</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="leave.html">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>请假申请</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="history.html">
+                        <i class="fas fa-history"></i>
+                        <span>打卡记录</span>
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a href="approval.html">
+                        <i class="fas fa-check-circle"></i>
+                        <span>审批管理</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <p class="user-name">李经理</p>
+                        <p class="user-role">技术部 - 经理</p>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- 主内容区域 -->
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">审批管理</h1>
+                <div class="header-actions">
+                    <div class="notification-bell">
+                        <i class="fas fa-bell"></i>
+                        <span class="notification-badge">3</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <!-- 待办统计 -->
+                <div class="approval-stats">
+                    <div class="approval-stat-card pending">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-number">5</span>
+                            <span class="stat-label">待审批</span>
+                        </div>
+                    </div>
+                    <div class="approval-stat-card approved">
+                        <div class="stat-icon">
+                            <i class="fas fa-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-number">28</span>
+                            <span class="stat-label">本月已审批</span>
+                        </div>
+                    </div>
+                    <div class="approval-stat-card rejected">
+                        <div class="stat-icon">
+                            <i class="fas fa-times"></i>
+                        </div>
+                        <div class="stat-content">
+                            <span class="stat-number">3</span>
+                            <span class="stat-label">本月已拒绝</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 审批类型切换 -->
+                <div class="approval-tabs">
+                    <button class="approval-tab active" data-type="leave">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>请假审批</span>
+                        <span class="tab-badge">3</span>
+                    </button>
+                    <button class="approval-tab" data-type="exception">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>异常打卡</span>
+                        <span class="tab-badge">2</span>
+                    </button>
+                    <button class="approval-tab" data-type="overtime">
+                        <i class="fas fa-business-time"></i>
+                        <span>加班申请</span>
+                        <span class="tab-badge">0</span>
+                    </button>
+                </div>
+
+                <!-- 请假审批列表 -->
+                <div class="approval-list-section" id="leaveApproval">
+                    <div class="section-header">
+                        <h3>请假审批</h3>
+                        <div class="batch-actions">
+                            <button class="btn-secondary" onclick="batchApprove()">
+                                <i class="fas fa-check"></i>
+                                批量通过
+                            </button>
+                            <button class="btn-danger" onclick="batchReject()">
+                                <i class="fas fa-times"></i>
+                                批量拒绝
+                            </button>
+                        </div>
+                    </div>
+                    <div class="approval-list">
+                        <div class="approval-item">
+                            <div class="approval-checkbox">
+                                <input type="checkbox" class="item-checkbox">
+                            </div>
+                            <div class="approval-user">
+                                <div class="user-avatar">
+                                    <span>王五</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">王五</span>
+                                    <span class="user-dept">技术部 - 前端工程师</span>
+                                </div>
+                            </div>
+                            <div class="approval-content">
+                                <div class="content-type sick">
+                                    <i class="fas fa-hospital"></i>
+                                    <span>病假</span>
+                                </div>
+                                <div class="content-detail">
+                                    <span class="date-range">2024-03-22（1天）</span>
+                                    <span class="apply-time">申请于 2024-03-21 20:30</span>
+                                </div>
+                                <p class="content-reason">感冒发烧，需要休息一天</p>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn-success" onclick="approveItem(this)">
+                                    <i class="fas fa-check"></i>
+                                    通过
+                                </button>
+                                <button class="btn-danger" onclick="rejectItem(this)">
+                                    <i class="fas fa-times"></i>
+                                    拒绝
+                                </button>
+                                <button class="btn-icon" onclick="showApprovalDetail('leave', 1)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="approval-item">
+                            <div class="approval-checkbox">
+                                <input type="checkbox" class="item-checkbox">
+                            </div>
+                            <div class="approval-user">
+                                <div class="user-avatar">
+                                    <span>赵六</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">赵六</span>
+                                    <span class="user-dept">技术部 - 后端工程师</span>
+                                </div>
+                            </div>
+                            <div class="approval-content">
+                                <div class="content-type annual">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                    <span>年假</span>
+                                </div>
+                                <div class="content-detail">
+                                    <span class="date-range">2024-03-25 至 2024-03-27（3天）</span>
+                                    <span class="apply-time">申请于 2024-03-18 10:15</span>
+                                </div>
+                                <p class="content-reason">计划带家人出游，已提前安排好工作</p>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn-success" onclick="approveItem(this)">
+                                    <i class="fas fa-check"></i>
+                                    通过
+                                </button>
+                                <button class="btn-danger" onclick="rejectItem(this)">
+                                    <i class="fas fa-times"></i>
+                                    拒绝
+                                </button>
+                                <button class="btn-icon" onclick="showApprovalDetail('leave', 2)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="approval-item">
+                            <div class="approval-checkbox">
+                                <input type="checkbox" class="item-checkbox">
+                            </div>
+                            <div class="approval-user">
+                                <div class="user-avatar">
+                                    <span>孙七</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">孙七</span>
+                                    <span class="user-dept">技术部 - 测试工程师</span>
+                                </div>
+                            </div>
+                            <div class="approval-content">
+                                <div class="content-type personal">
+                                    <i class="fas fa-user-clock"></i>
+                                    <span>事假</span>
+                                    <span class="emergency-tag">紧急</span>
+                                </div>
+                                <div class="content-detail">
+                                    <span class="date-range">2024-03-20（1天）</span>
+                                    <span class="apply-time">申请于 2024-03-20 09:00（事后补交）</span>
+                                </div>
+                                <p class="content-reason">家中突发急事，已电话沟通</p>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn-success" onclick="approveItem(this)">
+                                    <i class="fas fa-check"></i>
+                                    通过
+                                </button>
+                                <button class="btn-danger" onclick="rejectItem(this)">
+                                    <i class="fas fa-times"></i>
+                                    拒绝
+                                </button>
+                                <button class="btn-icon" onclick="showApprovalDetail('leave', 3)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 异常打卡审批列表 -->
+                <div class="approval-list-section" id="exceptionApproval" style="display: none;">
+                    <div class="section-header">
+                        <h3>异常打卡审批</h3>
+                    </div>
+                    <div class="approval-list">
+                        <div class="approval-item">
+                            <div class="approval-checkbox">
+                                <input type="checkbox" class="item-checkbox">
+                            </div>
+                            <div class="approval-user">
+                                <div class="user-avatar">
+                                    <span>周八</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">周八</span>
+                                    <span class="user-dept">技术部 - 前端工程师</span>
+                                </div>
+                            </div>
+                            <div class="approval-content">
+                                <div class="content-type exception">
+                                    <i class="fas fa-exclamation-circle"></i>
+                                    <span>忘记打卡</span>
+                                </div>
+                                <div class="content-detail">
+                                    <span class="date-range">2024-03-19</span>
+                                    <span class="apply-time">申请于 2024-03-19 18:30</span>
+                                </div>
+                                <p class="content-reason">早上打卡机故障，未能正常打卡，实际已到岗</p>
+                                <div class="content-proof">
+                                    <span class="proof-label">证明材料：</span>
+                                    <span class="proof-file"><i class="fas fa-image"></i> 打卡机故障照片.jpg</span>
+                                </div>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn-success" onclick="approveItem(this)">
+                                    <i class="fas fa-check"></i>
+                                    通过
+                                </button>
+                                <button class="btn-danger" onclick="rejectItem(this)">
+                                    <i class="fas fa-times"></i>
+                                    拒绝
+                                </button>
+                                <button class="btn-icon" onclick="showApprovalDetail('exception', 1)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="approval-item">
+                            <div class="approval-checkbox">
+                                <input type="checkbox" class="item-checkbox">
+                            </div>
+                            <div class="approval-user">
+                                <div class="user-avatar">
+                                    <span>吴九</span>
+                                </div>
+                                <div class="user-info">
+                                    <span class="user-name">吴九</span>
+                                    <span class="user-dept">技术部 - 后端工程师</span>
+                                </div>
+                            </div>
+                            <div class="approval-content">
+                                <div class="content-type late">
+                                    <i class="fas fa-clock"></i>
+                                    <span>迟到说明</span>
+                                </div>
+                                <div class="content-detail">
+                                    <span class="date-range">2024-03-18</span>
+                                    <span class="apply-time">申请于 2024-03-18 09:45</span>
+                                </div>
+                                <p class="content-reason">地铁故障导致迟到，已提供地铁延误证明</p>
+                                <div class="content-proof">
+                                    <span class="proof-label">证明材料：</span>
+                                    <span class="proof-file"><i class="fas fa-file-pdf"></i> 地铁延误证明.pdf</span>
+                                </div>
+                            </div>
+                            <div class="approval-actions">
+                                <button class="btn-success" onclick="approveItem(this)">
+                                    <i class="fas fa-check"></i>
+                                    通过
+                                </button>
+                                <button class="btn-danger" onclick="rejectItem(this)">
+                                    <i class="fas fa-times"></i>
+                                    拒绝
+                                </button>
+                                <button class="btn-icon" onclick="showApprovalDetail('exception', 2)">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 加班审批列表 -->
+                <div class="approval-list-section" id="overtimeApproval" style="display: none;">
+                    <div class="section-header">
+                        <h3>加班审批</h3>
+                    </div>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <p>暂无待审批的加班申请</p>
+                    </div>
+                </div>
+
+                <!-- 审批历史 -->
+                <div class="approval-history-section">
+                    <div class="section-header">
+                        <h3>审批历史</h3>
+                        <a href="#" class="view-all">查看全部 <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div class="history-timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-icon approved">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="timeline-title">批准了 张三 的年假申请</span>
+                                    <span class="timeline-time">2024-03-20 14:20</span>
+                                </div>
+                                <p class="timeline-desc">请假时间：2024-03-25 至 2024-03-27（3天）</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icon rejected">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="timeline-title">拒绝了 李四 的事假申请</span>
+                                    <span class="timeline-time">2024-03-19 10:30</span>
+                                </div>
+                                <p class="timeline-desc">原因：项目关键期，建议调整请假时间</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-icon approved">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="timeline-title">批准了 王五 的异常打卡申请</span>
+                                    <span class="timeline-time">2024-03-18 16:45</span>
+                                </div>
+                                <p class="timeline-desc">类型：忘记打卡，日期：2024-03-15</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 审批详情弹窗 -->
+    <div class="modal" id="approvalDetailModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>审批详情</h3>
+                <button class="close-btn" onclick="closeApprovalDetailModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="approval-detail-layout">
+                    <div class="detail-left">
+                        <div class="applicant-card">
+                            <div class="applicant-avatar">
+                                <span>王五</span>
+                            </div>
+                            <div class="applicant-info">
+                                <h4>王五</h4>
+                                <p>技术部 - 前端工程师</p>
+                                <p>工号：T2021005</p>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>申请信息</h4>
+                            <div class="detail-row">
+                                <label>申请类型：</label>
+                                <span class="type-tag sick">病假</span>
+                            </div>
+                            <div class="detail-row">
+                                <label>开始日期：</label>
+                                <span>2024-03-22</span>
+                            </div>
+                            <div class="detail-row">
+                                <label>结束日期：</label>
+                                <span>2024-03-22</span>
+                            </div>
+                            <div class="detail-row">
+                                <label>请假天数：</label>
+                                <span>1天</span>
+                            </div>
+                            <div class="detail-row">
+                                <label>申请时间：</label>
+                                <span>2024-03-21 20:30</span>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>假期余额</h4>
+                            <div class="detail-row">
+                                <label>年假余额：</label>
+                                <span>10天</span>
+                            </div>
+                            <div class="detail-row">
+                                <label>本月已请：</label>
+                                <span>0天</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-right">
+                        <div class="detail-section">
+                            <h4>请假事由</h4>
+                            <p class="reason-text">感冒发烧，需要休息一天。已去医院就诊，附上诊断证明。</p>
+                        </div>
+                        <div class="detail-section">
+                            <h4>附件材料</h4>
+                            <div class="attachment-list">
+                                <div class="attachment-item">
+                                    <i class="fas fa-file-medical"></i>
+                                    <span>医院诊断证明.pdf</span>
+                                    <button class="btn-text">下载</button>
+                                </div>
+                                <div class="attachment-item">
+                                    <i class="fas fa-image"></i>
+                                    <span>病历照片.jpg</span>
+                                    <button class="btn-text">查看</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-section">
+                            <h4>审批意见</h4>
+                            <textarea class="form-control" rows="3" placeholder="请输入审批意见（可选）..."></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeApprovalDetailModal()">取消</button>
+                <button class="btn-danger" onclick="rejectWithReason()">
+                    <i class="fas fa-times"></i>
+                    拒绝
+                </button>
+                <button class="btn-success" onclick="approveWithComment()">
+                    <i class="fas fa-check"></i>
+                    通过
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
