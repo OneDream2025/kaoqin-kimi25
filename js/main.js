@@ -3,14 +3,77 @@ let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
 
+// 用户数据
+const users = {
+    'zhangsan': {
+        password: '123456',
+        name: '张三',
+        role: '技术部 - 工程师',
+        avatar: '张'
+    },
+    'limanager': {
+        password: '123456',
+        name: '李经理',
+        role: '技术部 - 经理',
+        avatar: '李'
+    }
+};
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    checkAuth();
     initCurrentTime();
     initLocation();
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
+    updateUserInfo();
 });
+
+// 检查身份验证
+function checkAuth() {
+    const currentPage = window.location.pathname.split('/').pop();
+    if (currentPage === 'login.html') {
+        return;
+    }
+    
+    const user = getCurrentUser();
+    if (!user) {
+        window.location.href = 'login.html';
+        return;
+    }
+}
+
+// 获取当前用户
+function getCurrentUser() {
+    const sessionUser = sessionStorage.getItem('currentUser');
+    const localUser = localStorage.getItem('currentUser');
+    return sessionUser ? JSON.parse(sessionUser) : (localUser ? JSON.parse(localUser) : null);
+}
+
+// 更新用户信息显示
+function updateUserInfo() {
+    const user = getCurrentUser();
+    if (user) {
+        const userNameElements = document.querySelectorAll('.user-name');
+        const userRoleElements = document.querySelectorAll('.user-role');
+        
+        userNameElements.forEach(el => {
+            el.textContent = user.name;
+        });
+        
+        userRoleElements.forEach(el => {
+            el.textContent = user.role;
+        });
+    }
+}
+
+// 登出功能
+function logout() {
+    sessionStorage.removeItem('currentUser');
+    localStorage.removeItem('currentUser');
+    window.location.href = 'login.html';
+}
 
 // 初始化当前时间显示
 function initCurrentTime() {
@@ -133,6 +196,11 @@ function initEventListeners() {
             }
         });
     }
+
+    // 审批项复选框变化监听
+    document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectAllState);
+    });
 }
 
 // 更新打卡图标
@@ -304,13 +372,16 @@ function calculateLeaveDays() {
         const start = new Date(startDate.value);
         const end = new Date(endDate.value);
         
-        if (end >= start) {
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            leaveDays.value = diffDays + '天';
-        } else {
+        if (end < start) {
+            showNotification('结束日期不能小于开始日期！', 'error');
+            endDate.value = '';
             leaveDays.value = '';
+            return;
         }
+        
+        const diffTime = Math.abs(end - start);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+        leaveDays.value = diffDays + '天';
     }
 }
 
@@ -416,6 +487,7 @@ function approveItem(btn) {
         item.remove();
         showNotification('审批已通过', 'success');
         updateBadgeCount();
+        updateSelectAllState();
     }, 300);
 }
 
@@ -426,6 +498,7 @@ function rejectItem(btn) {
         item.remove();
         showNotification('审批已拒绝', 'success');
         updateBadgeCount();
+        updateSelectAllState();
     }, 300);
 }
 
@@ -444,6 +517,7 @@ function batchApprove() {
     
     showNotification(`已批量通过 ${checkedItems.length} 项`, 'success');
     updateBadgeCount();
+    updateSelectAllState();
 }
 
 function batchReject() {
@@ -461,6 +535,43 @@ function batchReject() {
     
     showNotification(`已批量拒绝 ${checkedItems.length} 项`, 'success');
     updateBadgeCount();
+    updateSelectAllState();
+}
+
+function toggleSelectAll(type) {
+    const selectAllCheckbox = document.getElementById(type === 'leave' ? 'selectAllLeave' : 'selectAllException');
+    const containerId = type === 'leave' ? 'leaveApproval' : 'exceptionApproval';
+    const container = document.getElementById(containerId);
+    
+    if (container && selectAllCheckbox) {
+        const checkboxes = container.querySelectorAll('.item-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    }
+}
+
+function updateSelectAllState() {
+    const leaveContainer = document.getElementById('leaveApproval');
+    const exceptionContainer = document.getElementById('exceptionApproval');
+    
+    if (leaveContainer) {
+        const leaveCheckboxes = leaveContainer.querySelectorAll('.item-checkbox');
+        const leaveChecked = leaveContainer.querySelectorAll('.item-checkbox:checked');
+        const selectAllLeave = document.getElementById('selectAllLeave');
+        if (selectAllLeave && leaveCheckboxes.length > 0) {
+            selectAllLeave.checked = leaveCheckboxes.length === leaveChecked.length;
+        }
+    }
+    
+    if (exceptionContainer) {
+        const exceptionCheckboxes = exceptionContainer.querySelectorAll('.item-checkbox');
+        const exceptionChecked = exceptionContainer.querySelectorAll('.item-checkbox:checked');
+        const selectAllException = document.getElementById('selectAllException');
+        if (selectAllException && exceptionCheckboxes.length > 0) {
+            selectAllException.checked = exceptionCheckboxes.length === exceptionChecked.length;
+        }
+    }
 }
 
 // 更新徽章数量
