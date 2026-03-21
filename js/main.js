@@ -5,12 +5,83 @@ let checkoutTime = null;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查登录状态（登录页面除外）
+    if (!window.location.href.includes('login.html')) {
+        if (!checkAuth()) {
+            return;
+        }
+        updateUserInfo();
+    }
+
     initCurrentTime();
     initLocation();
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
 });
+
+// 检查用户是否已登录
+function checkAuth() {
+    const currentUser = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    if (!currentUser) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+}
+
+// 获取当前登录用户
+function getCurrentUser() {
+    const userStr = localStorage.getItem('currentUser') || sessionStorage.getItem('currentUser');
+    return userStr ? JSON.parse(userStr) : null;
+}
+
+// 更新页面上的用户信息
+function updateUserInfo() {
+    const user = getCurrentUser();
+    if (!user) return;
+
+    // 更新用户名
+    const userNameElements = document.querySelectorAll('.user-name');
+    userNameElements.forEach(el => {
+        el.textContent = user.name;
+    });
+
+    // 更新用户角色
+    const userRoleElements = document.querySelectorAll('.user-role');
+    userRoleElements.forEach(el => {
+        el.textContent = user.role;
+    });
+
+    // 更新头像
+    const avatarElements = document.querySelectorAll('.user-avatar');
+    avatarElements.forEach(el => {
+        const icon = el.querySelector('i');
+        if (icon) {
+            icon.style.display = 'none';
+        }
+        let textSpan = el.querySelector('.avatar-text');
+        if (!textSpan) {
+            textSpan = document.createElement('span');
+            textSpan.className = 'avatar-text';
+            textSpan.style.cssText = 'font-size: 14px; font-weight: 600; color: white;';
+            el.appendChild(textSpan);
+        }
+        textSpan.textContent = user.avatar || user.name.charAt(0);
+    });
+}
+
+// 退出登录
+function logout() {
+    if (confirm('确定要退出登录吗？')) {
+        localStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentUser');
+        showNotification('已退出登录', 'info');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 500);
+    }
+}
 
 // 初始化当前时间显示
 function initCurrentTime() {
@@ -133,6 +204,21 @@ function initEventListeners() {
             }
         });
     }
+
+    // 审批项复选框事件监听
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const listContainer = this.closest('.approval-list-section');
+            if (listContainer) {
+                if (listContainer.id === 'leaveApproval') {
+                    updateSelectAllState('leave');
+                } else if (listContainer.id === 'exceptionApproval') {
+                    updateSelectAllState('exception');
+                }
+            }
+        });
+    });
 }
 
 // 更新打卡图标
@@ -277,6 +363,9 @@ function closeLeaveModal() {
 function submitLeave() {
     const form = document.getElementById('leaveForm');
     if (form && form.checkValidity()) {
+        if (!validateLeaveDates()) {
+            return;
+        }
         closeLeaveModal();
         showNotification('请假申请已提交，等待审批', 'success');
     } else {
@@ -299,19 +388,39 @@ function calculateLeaveDays() {
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
     const leaveDays = document.getElementById('leaveDays');
-    
+
     if (startDate && endDate && leaveDays && startDate.value && endDate.value) {
         const start = new Date(startDate.value);
         const end = new Date(endDate.value);
-        
+
         if (end >= start) {
             const diffTime = Math.abs(end - start);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             leaveDays.value = diffDays + '天';
+            endDate.setCustomValidity('');
         } else {
             leaveDays.value = '';
+            endDate.setCustomValidity('结束日期不能早于开始日期');
+            showNotification('结束日期不能早于开始日期', 'error');
         }
     }
+}
+
+// 验证请假表单日期
+function validateLeaveDates() {
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+
+    if (startDate && endDate && startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+
+        if (end < start) {
+            showNotification('结束日期不能早于开始日期', 'error');
+            return false;
+        }
+    }
+    return true;
 }
 
 // 撤销请假
@@ -461,6 +570,66 @@ function batchReject() {
     
     showNotification(`已批量拒绝 ${checkedItems.length} 项`, 'success');
     updateBadgeCount();
+}
+
+// 全选/取消全选功能
+function toggleSelectAll(type) {
+    let checkboxId, listId;
+    if (type === 'leave') {
+        checkboxId = 'selectAllLeave';
+        listId = 'leaveApproval';
+    } else if (type === 'exception') {
+        checkboxId = 'selectAllException';
+        listId = 'exceptionApproval';
+    } else {
+        return;
+    }
+
+    const selectAllCheckbox = document.getElementById(checkboxId);
+    const listContainer = document.getElementById(listId);
+
+    if (selectAllCheckbox && listContainer) {
+        const itemCheckboxes = listContainer.querySelectorAll('.item-checkbox');
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.checked = selectAllCheckbox.checked;
+        });
+    }
+}
+
+// 更新全选按钮状态
+function updateSelectAllState(type) {
+    let checkboxId, listId;
+    if (type === 'leave') {
+        checkboxId = 'selectAllLeave';
+        listId = 'leaveApproval';
+    } else if (type === 'exception') {
+        checkboxId = 'selectAllException';
+        listId = 'exceptionApproval';
+    } else {
+        return;
+    }
+
+    const selectAllCheckbox = document.getElementById(checkboxId);
+    const listContainer = document.getElementById(listId);
+
+    if (selectAllCheckbox && listContainer) {
+        const itemCheckboxes = listContainer.querySelectorAll('.item-checkbox');
+        const checkedCheckboxes = listContainer.querySelectorAll('.item-checkbox:checked');
+
+        if (itemCheckboxes.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCheckboxes.length === 0) {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = false;
+        } else if (checkedCheckboxes.length === itemCheckboxes.length) {
+            selectAllCheckbox.checked = true;
+            selectAllCheckbox.indeterminate = false;
+        } else {
+            selectAllCheckbox.checked = false;
+            selectAllCheckbox.indeterminate = true;
+        }
+    }
 }
 
 // 更新徽章数量
