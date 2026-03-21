@@ -3,14 +3,144 @@ let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
 
+// 模拟用户数据库
+const mockUsers = {
+    employee: { password: '123456', name: '张三', role: 'employee', dept: '技术部', position: '工程师' },
+    manager: { password: '123456', name: '李经理', role: 'manager', dept: '技术部', position: '经理' },
+    admin: { password: '123456', name: '管理员', role: 'admin', dept: '行政部', position: '系统管理员' }
+};
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    // 检查登录状态（登录页面除外）
+    if (!window.location.pathname.includes('login.html')) {
+        checkAuth();
+        updateUserInfo();
+    }
+    
+    // 初始化登录表单
+    initLoginForm();
+    
     initCurrentTime();
     initLocation();
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
 });
+
+// 检查登录状态
+function checkAuth() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+        // 未登录，跳转到登录页面
+        window.location.href = 'login.html';
+    }
+}
+
+// 获取当前登录用户
+function getCurrentUser() {
+    const userStr = localStorage.getItem('currentUser');
+    return userStr ? JSON.parse(userStr) : null;
+}
+
+// 保存登录状态
+function setCurrentUser(user) {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+}
+
+// 清除登录状态
+function clearCurrentUser() {
+    localStorage.removeItem('currentUser');
+}
+
+// 初始化登录表单
+function initLoginForm() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleLogin();
+        });
+    }
+}
+
+// 处理登录
+function handleLogin() {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    const role = document.getElementById('role').value;
+    
+    // 验证用户
+    const user = mockUsers[username];
+    if (user && user.password === password && user.role === role) {
+        // 登录成功
+        setCurrentUser({
+            username: username,
+            name: user.name,
+            role: user.role,
+            dept: user.dept,
+            position: user.position,
+            loginTime: new Date().toISOString()
+        });
+        
+        showNotification('登录成功！正在跳转...', 'success');
+        
+        // 根据角色跳转到不同页面
+        setTimeout(() => {
+            if (role === 'manager' || role === 'admin') {
+                window.location.href = 'approval.html';
+            } else {
+                window.location.href = 'index.html';
+            }
+        }, 1000);
+    } else {
+        showNotification('用户名或密码错误，请重试', 'error');
+    }
+}
+
+// 处理登出
+function handleLogout() {
+    if (confirm('确定要退出登录吗？')) {
+        clearCurrentUser();
+        showNotification('已安全退出', 'success');
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 500);
+    }
+}
+
+// 更新页面上的用户信息显示
+function updateUserInfo() {
+    const user = getCurrentUser();
+    if (user) {
+        // 更新侧边栏用户信息
+        const userNameElements = document.querySelectorAll('.user-name');
+        const userRoleElements = document.querySelectorAll('.user-role');
+        
+        userNameElements.forEach(el => {
+            el.textContent = user.name;
+        });
+        
+        userRoleElements.forEach(el => {
+            el.textContent = `${user.dept} - ${user.position}`;
+        });
+        
+        // 添加退出登录按钮到侧边栏
+        addLogoutButton();
+    }
+}
+
+// 添加退出登录按钮
+function addLogoutButton() {
+    const sidebarFooter = document.querySelector('.sidebar-footer');
+    if (sidebarFooter && !sidebarFooter.querySelector('.logout-btn')) {
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'logout-btn';
+        logoutBtn.innerHTML = '<i class="fas fa-sign-out-alt"></i><span>退出登录</span>';
+        logoutBtn.onclick = handleLogout;
+        sidebarFooter.appendChild(logoutBtn);
+    }
+}
 
 // 初始化当前时间显示
 function initCurrentTime() {
@@ -276,9 +406,25 @@ function closeLeaveModal() {
 
 function submitLeave() {
     const form = document.getElementById('leaveForm');
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    
+    // 额外验证日期
+    if (startDate && endDate && startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        if (end < start) {
+            showNotification('结束日期不能小于开始日期', 'error');
+            return;
+        }
+    }
+    
     if (form && form.checkValidity()) {
         closeLeaveModal();
         showNotification('请假申请已提交，等待审批', 'success');
+        // 重置表单
+        form.reset();
+        document.getElementById('leaveDays').value = '';
     } else {
         form.reportValidity();
     }
@@ -300,16 +446,26 @@ function calculateLeaveDays() {
     const endDate = document.getElementById('endDate');
     const leaveDays = document.getElementById('leaveDays');
     
-    if (startDate && endDate && leaveDays && startDate.value && endDate.value) {
-        const start = new Date(startDate.value);
-        const end = new Date(endDate.value);
+    if (startDate && endDate && leaveDays) {
+        // 动态设置结束日期的最小值
+        if (startDate.value) {
+            endDate.min = startDate.value;
+        }
         
-        if (end >= start) {
-            const diffTime = Math.abs(end - start);
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-            leaveDays.value = diffDays + '天';
-        } else {
-            leaveDays.value = '';
+        if (startDate.value && endDate.value) {
+            const start = new Date(startDate.value);
+            const end = new Date(endDate.value);
+            
+            if (end >= start) {
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+                leaveDays.value = diffDays + '天';
+                // 清除之前的错误状态
+                endDate.setCustomValidity('');
+            } else {
+                leaveDays.value = '';
+                endDate.setCustomValidity('结束日期不能小于开始日期');
+            }
         }
     }
 }
@@ -461,6 +617,34 @@ function batchReject() {
     
     showNotification(`已批量拒绝 ${checkedItems.length} 项`, 'success');
     updateBadgeCount();
+}
+
+// 全选/取消全选
+function toggleSelectAll(sectionId, checkbox) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        const itemCheckboxes = section.querySelectorAll('.item-checkbox');
+        itemCheckboxes.forEach(item => {
+            item.checked = checkbox.checked;
+        });
+    }
+}
+
+// 更新全选复选框状态
+function updateSelectAllState(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        const itemCheckboxes = section.querySelectorAll('.item-checkbox');
+        const selectAllCheckbox = section.querySelector('.select-all-checkbox');
+        
+        if (selectAllCheckbox && itemCheckboxes.length > 0) {
+            const allChecked = Array.from(itemCheckboxes).every(item => item.checked);
+            const someChecked = Array.from(itemCheckboxes).some(item => item.checked);
+            
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
+        }
+    }
 }
 
 // 更新徽章数量
