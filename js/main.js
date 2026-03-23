@@ -2,6 +2,7 @@
 let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
+let hasCheckedInToday = false; // 标记今天是否已上班打卡
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -160,38 +161,46 @@ function updateCheckinIcon(icon, method) {
 function handleCheckin() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
-    
+
     if (currentCheckinStatus === 'out') {
+        // 上班打卡 - 检查是否已打卡
+        if (hasCheckedInToday) {
+            showNotification('您今天已经打过上班卡了，请勿重复打卡！', 'error');
+            return;
+        }
+
         // 上班打卡
         checkinTime = now;
         currentCheckinStatus = 'in';
-        
+        hasCheckedInToday = true; // 标记已上班打卡
+
         document.getElementById('checkInTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '工作中';
         document.getElementById('todayStatus').className = 'status-badge approved';
-        
+
         const btn = document.getElementById('checkinBtn');
         btn.querySelector('span').textContent = '下班打卡';
         btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
-        
+
         showNotification('上班打卡成功！', 'success');
     } else {
-        // 下班打卡
+        // 下班打卡 - 支持多次打卡
         checkoutTime = now;
-        currentCheckinStatus = 'out';
-        
+        // 保持 currentCheckinStatus 为 'in'，允许继续打下班卡
+
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
         document.getElementById('todayStatus').className = 'status-badge approved';
-        
+
         // 计算工作时长
         const duration = calculateDuration(checkinTime, checkoutTime);
         document.getElementById('workDuration').textContent = duration;
-        
+
+        // 按钮保持为"下班打卡"，允许再次打卡
         const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
-        
+        btn.querySelector('span').textContent = '下班打卡';
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+
         showNotification('下班打卡成功！', 'success');
     }
 }
