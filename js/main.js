@@ -1,5 +1,6 @@
 // 全局变量
 let currentCheckinStatus = 'out'; // 'in' 或 'out'
+let hasCheckedIn = false; // 是否已上班打卡（上班只能打一次）
 let checkinTime = null;
 let checkoutTime = null;
 
@@ -162,9 +163,27 @@ function handleCheckin() {
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
     
     if (currentCheckinStatus === 'out') {
+        // 检查是否已打过上班卡
+        if (hasCheckedIn) {
+            // 已经上班打卡过，现在是下班状态，点击后可以再次下班打卡
+            checkoutTime = now;
+            
+            document.getElementById('checkOutTime').textContent = timeString;
+            document.getElementById('todayStatus').textContent = '已下班';
+            document.getElementById('todayStatus').className = 'status-badge approved';
+            
+            // 计算工作时长
+            const duration = calculateDuration(checkinTime, checkoutTime);
+            document.getElementById('workDuration').textContent = duration;
+            
+            showNotification('下班时间已更新！', 'success');
+            return;
+        }
+        
         // 上班打卡
         checkinTime = now;
         currentCheckinStatus = 'in';
+        hasCheckedIn = true; // 标记已上班打卡
         
         document.getElementById('checkInTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '工作中';
@@ -176,7 +195,7 @@ function handleCheckin() {
         
         showNotification('上班打卡成功！', 'success');
     } else {
-        // 下班打卡
+        // 下班打卡（允许多次打卡，每次更新下班时间）
         checkoutTime = now;
         currentCheckinStatus = 'out';
         
@@ -189,8 +208,8 @@ function handleCheckin() {
         document.getElementById('workDuration').textContent = duration;
         
         const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
+        btn.querySelector('span').textContent = '更新下班时间';
+        btn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
         
         showNotification('下班打卡成功！', 'success');
     }
@@ -208,8 +227,27 @@ function calculateDuration(start, end) {
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
+    
+    let iconClass = 'info-circle';
+    let bgColor = '#3b82f6';
+    
+    switch(type) {
+        case 'success':
+            iconClass = 'check-circle';
+            bgColor = '#10b981';
+            break;
+        case 'error':
+            iconClass = 'times-circle';
+            bgColor = '#ef4444';
+            break;
+        case 'warning':
+            iconClass = 'exclamation-circle';
+            bgColor = '#f59e0b';
+            break;
+    }
+    
     notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'times-circle' : 'info-circle'}"></i>
+        <i class="fas fa-${iconClass}"></i>
         <span>${message}</span>
     `;
     
@@ -217,7 +255,7 @@ function showNotification(message, type = 'info') {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        background: ${bgColor};
         color: white;
         padding: 16px 24px;
         border-radius: 8px;
