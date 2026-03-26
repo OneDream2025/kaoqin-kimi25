@@ -3,6 +3,27 @@ let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
 
+// 获取今日日期字符串
+function getTodayString() {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+}
+
+// 获取今日打卡记录
+function getTodayRecord() {
+    const records = JSON.parse(localStorage.getItem('checkinRecords') || '{}');
+    const today = getTodayString();
+    return records[today] || null;
+}
+
+// 保存打卡记录
+function saveTodayRecord(record) {
+    const records = JSON.parse(localStorage.getItem('checkinRecords') || '{}');
+    const today = getTodayString();
+    records[today] = record;
+    localStorage.setItem('checkinRecords', JSON.stringify(records));
+}
+
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
     initCurrentTime();
@@ -10,7 +31,68 @@ document.addEventListener('DOMContentLoaded', function() {
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
+    initTodayCheckinStatus();
 });
+
+// 初始化今日打卡状态
+function initTodayCheckinStatus() {
+    const todayRecord = getTodayRecord();
+    if (todayRecord) {
+        checkinTime = todayRecord.checkinTime ? new Date(todayRecord.checkinTime) : null;
+        checkoutTime = todayRecord.checkoutTime ? new Date(todayRecord.checkoutTime) : null;
+        currentCheckinStatus = todayRecord.currentStatus || 'out';
+        
+        // 更新UI显示
+        updateCheckinUI();
+    }
+}
+
+// 更新打卡UI显示
+function updateCheckinUI() {
+    const checkInTimeEl = document.getElementById('checkInTime');
+    const checkOutTimeEl = document.getElementById('checkOutTime');
+    const workDurationEl = document.getElementById('workDuration');
+    const todayStatusEl = document.getElementById('todayStatus');
+    const checkinBtn = document.getElementById('checkinBtn');
+    
+    if (checkinTime) {
+        const timeString = checkinTime.toLocaleTimeString('zh-CN', { hour12: false });
+        checkInTimeEl.textContent = timeString;
+        todayStatusEl.textContent = currentCheckinStatus === 'in' ? '工作中' : '已下班';
+        todayStatusEl.className = 'status-badge approved';
+    }
+    
+    if (checkoutTime) {
+        const timeString = checkoutTime.toLocaleTimeString('zh-CN', { hour12: false });
+        checkOutTimeEl.textContent = timeString;
+        
+        // 计算工作时长
+        const duration = calculateDuration(checkinTime, checkoutTime);
+        workDurationEl.textContent = duration;
+    }
+    
+    // 更新按钮状态
+    if (checkinBtn) {
+        const btnSpan = checkinBtn.querySelector('span');
+        if (checkinTime && currentCheckinStatus === 'in') {
+            btnSpan.textContent = '下班打卡';
+            checkinBtn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+            checkinBtn.disabled = false;
+            checkinBtn.style.cursor = 'pointer';
+        } else if (checkinTime && currentCheckinStatus === 'out') {
+            // 已打下班卡，仍保持按钮可用允许更新
+            btnSpan.textContent = '更新下班打卡';
+            checkinBtn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+            checkinBtn.disabled = false;
+            checkinBtn.style.cursor = 'pointer';
+        } else {
+            btnSpan.textContent = '上班打卡';
+            checkinBtn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
+            checkinBtn.disabled = false;
+            checkinBtn.style.cursor = 'pointer';
+        }
+    }
+}
 
 // 初始化当前时间显示
 function initCurrentTime() {
@@ -161,12 +243,27 @@ function handleCheckin() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
     
-    if (currentCheckinStatus === 'out') {
-        // 上班打卡
+    // 获取今日记录，检查是否已打上班卡
+    const todayRecord = getTodayRecord();
+    const hasCheckinToday = todayRecord && todayRecord.checkinTime;
+    const hasCheckoutToday = todayRecord && todayRecord.checkoutTime;
+    
+    if (currentCheckinStatus === 'out' && !hasCheckinToday) {
+        // 情况1：未打上班卡 - 上班打卡
         checkinTime = now;
         currentCheckinStatus = 'in';
+        checkoutTime = null; // 重置下班时间
+        
+        // 保存记录
+        saveTodayRecord({
+            checkinTime: checkinTime.toISOString(),
+            checkoutTime: null,
+            currentStatus: currentCheckinStatus
+        });
         
         document.getElementById('checkInTime').textContent = timeString;
+        document.getElementById('checkOutTime').textContent = '--:--';
+        document.getElementById('workDuration').textContent = '--';
         document.getElementById('todayStatus').textContent = '工作中';
         document.getElementById('todayStatus').className = 'status-badge approved';
         
@@ -175,10 +272,18 @@ function handleCheckin() {
         btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
         
         showNotification('上班打卡成功！', 'success');
-    } else {
-        // 下班打卡
+    } else if (currentCheckinStatus === 'out' && hasCheckinToday) {
+        // 情况2：已打下班卡，再次点击更新下班时间
+        const isFirstCheckout = !hasCheckoutToday;
         checkoutTime = now;
         currentCheckinStatus = 'out';
+        
+        // 保存记录
+        saveTodayRecord({
+            checkinTime: checkinTime.toISOString(),
+            checkoutTime: checkoutTime.toISOString(),
+            currentStatus: currentCheckinStatus
+        });
         
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
@@ -189,10 +294,42 @@ function handleCheckin() {
         document.getElementById('workDuration').textContent = duration;
         
         const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
+        // 保持按钮可用，允许再次打卡更新下班时间
+        btn.querySelector('span').textContent = '更新下班打卡';
+        btn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+        btn.disabled = false;
+        btn.style.cursor = 'pointer';
         
-        showNotification('下班打卡成功！', 'success');
+        showNotification(isFirstCheckout ? '下班打卡成功！' : '已更新下班打卡时间！', 'success');
+    } else {
+        // 情况3：工作中 - 首次下班打卡
+        const isFirstCheckout = !checkoutTime;
+        checkoutTime = now;
+        currentCheckinStatus = 'out';
+        
+        // 保存记录
+        saveTodayRecord({
+            checkinTime: checkinTime.toISOString(),
+            checkoutTime: checkoutTime.toISOString(),
+            currentStatus: currentCheckinStatus
+        });
+        
+        document.getElementById('checkOutTime').textContent = timeString;
+        document.getElementById('todayStatus').textContent = '已下班';
+        document.getElementById('todayStatus').className = 'status-badge approved';
+        
+        // 计算工作时长
+        const duration = calculateDuration(checkinTime, checkoutTime);
+        document.getElementById('workDuration').textContent = duration;
+        
+        const btn = document.getElementById('checkinBtn');
+        // 下班打卡后仍保持按钮可用，允许再次打卡更新下班时间
+        btn.querySelector('span').textContent = '更新下班打卡';
+        btn.style.background = 'linear-gradient(135deg, #f59e0b, #fbbf24)';
+        btn.disabled = false;
+        btn.style.cursor = 'pointer';
+        
+        showNotification(isFirstCheckout ? '下班打卡成功！' : '已更新下班打卡时间！', 'success');
     }
 }
 

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打卡功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-case {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 4px solid #4f46e5;
+            background: #f8f9fa;
+        }
+        .test-case h3 {
+            margin-top: 0;
+            color: #4f46e5;
+        }
+        .btn {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        .log-area {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            height: 300px;
+            overflow-y: auto;
+        }
+        .log-item {
+            margin: 5px 0;
+            padding: 3px;
+            border-bottom: 1px solid #333;
+        }
+        .log-success {
+            color: #10b981;
+        }
+        .log-error {
+            color: #ef4444;
+        }
+        .log-info {
+            color: #60a5fa;
+        }
+        .status-display {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f9ff;
+            border-radius: 8px;
+        }
+        .status-item {
+            text-align: center;
+        }
+        .status-label {
+            font-size: 12px;
+            color: #666;
+            display: block;
+        }
+        .status-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>打卡功能测试</h1>
+        
+        <div class="status-display">
+            <div class="status-item">
+                <span class="status-label">上班时间</span>
+                <span class="status-value" id="test-checkin">--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">下班时间</span>
+                <span class="status-value" id="test-checkout">--:--</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">当前状态</span>
+                <span class="status-value" id="test-status">未打卡</span>
+            </div>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例1: 首次上班打卡</h3>
+            <p>预期：打卡成功，状态变为"工作中"</p>
+            <button class="btn btn-primary" onclick="testCheckin()">点击上班打卡</button>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例2: 重复上班打卡测试</h3>
+            <p>预期：提示"今日已完成上班打卡，请勿重复打卡！"</p>
+            <button class="btn btn-danger" onclick="testDuplicateCheckin()">测试重复打卡</button>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例3: 下班打卡</h3>
+            <p>预期：打卡成功，按钮变为"更新下班打卡"，保持可用</p>
+            <button class="btn btn-success" onclick="testCheckout()">点击下班打卡</button>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例4: 多次下班打卡更新时间</h3>
+            <p>预期：可多次点击，每次更新下班时间并显示"已更新下班打卡时间"</p>
+            <button class="btn btn-success" onclick="testCheckout()">多次点击更新下班时间</button>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例4: 刷新页面后状态恢复</h3>
+            <p>预期：刷新后状态保持不变</p>
+            <button class="btn btn-primary" onclick="location.reload()">刷新页面</button>
+        </div>
+
+        <div class="test-case">
+            <h3>测试用例5: 清除测试数据</h3>
+            <p>清除localStorage中的打卡记录</p>
+            <button class="btn btn-danger" onclick="clearTestData()">清除数据</button>
+        </div>
+
+        <div class="log-area" id="logArea">
+            <div class="log-item log-info">=== 测试日志开始 ===</div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+    <script>
+        // 覆盖通知函数以显示在日志中
+        const originalShowNotification = showNotification;
+        showNotification = function(message, type) {
+            addLog(message, type);
+            originalShowNotification(message, type);
+        };
+
+        function addLog(message, type = 'info') {
+            const logArea = document.getElementById('logArea');
+            const time = new Date().toLocaleTimeString('zh-CN');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item log-${type}`;
+            logItem.textContent = `[${time}] ${message}`;
+            logArea.appendChild(logItem);
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function updateTestStatus() {
+            const todayRecord = getTodayRecord();
+            if (todayRecord) {
+                if (todayRecord.checkinTime) {
+                    const time = new Date(todayRecord.checkinTime).toLocaleTimeString('zh-CN', {hour12: false});
+                    document.getElementById('test-checkin').textContent = time;
+                }
+                if (todayRecord.checkoutTime) {
+                    const time = new Date(todayRecord.checkoutTime).toLocaleTimeString('zh-CN', {hour12: false});
+                    document.getElementById('test-checkout').textContent = time;
+                }
+                document.getElementById('test-status').textContent = 
+                    todayRecord.currentStatus === 'in' ? '工作中' : '已下班';
+            }
+        }
+
+        function testCheckin() {
+            addLog('--- 测试用例1: 首次上班打卡 ---', 'info');
+            // 先清除数据确保是首次
+            clearTestDataQuiet();
+            handleCheckin();
+            updateTestStatus();
+        }
+
+        function testDuplicateCheckin() {
+            addLog('--- 测试用例2: 重复上班打卡测试 ---', 'info');
+            // 确保已打上班卡且状态为out
+            const todayRecord = getTodayRecord();
+            if (!todayRecord || !todayRecord.checkinTime) {
+                addLog('请先执行测试用例1', 'error');
+                return;
+            }
+            // 修改状态为out模拟可以再次打卡的情况
+            currentCheckinStatus = 'out';
+            handleCheckin();
+            updateTestStatus();
+        }
+
+        function testCheckout() {
+            addLog('--- 测试用例3: 下班打卡 ---', 'info');
+            const todayRecord = getTodayRecord();
+            if (!todayRecord || !todayRecord.checkinTime) {
+                addLog('请先执行测试用例1', 'error');
+                return;
+            }
+            currentCheckinStatus = 'in';
+            handleCheckin(); // 这会触发下班打卡逻辑
+            updateTestStatus();
+        }
+
+        function clearTestDataQuiet() {
+            localStorage.removeItem('checkinRecords');
+            currentCheckinStatus = 'out';
+            checkinTime = null;
+            checkoutTime = null;
+            document.getElementById('test-checkin').textContent = '--:--';
+            document.getElementById('test-checkout').textContent = '--:--';
+            document.getElementById('test-status').textContent = '未打卡';
+        }
+
+        function clearTestData() {
+            clearTestDataQuiet();
+            addLog('测试数据已清除', 'success');
+        }
+
+        // 初始化时更新状态显示
+        updateTestStatus();
+        addLog('页面加载完成，状态已恢复', 'info');
+    </script>
+</body>
+</html>
