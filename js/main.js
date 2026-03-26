@@ -2,6 +2,7 @@
 let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
+let hasCheckedIn = false;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -162,9 +163,13 @@ function handleCheckin() {
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
     
     if (currentCheckinStatus === 'out') {
-        // 上班打卡
+        if (hasCheckedIn) {
+            showNotification('今日已完成上班打卡，不能重复打卡！', 'error');
+            return;
+        }
         checkinTime = now;
         currentCheckinStatus = 'in';
+        hasCheckedIn = true;
         
         document.getElementById('checkInTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '工作中';
@@ -176,21 +181,14 @@ function handleCheckin() {
         
         showNotification('上班打卡成功！', 'success');
     } else {
-        // 下班打卡
         checkoutTime = now;
-        currentCheckinStatus = 'out';
         
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
         document.getElementById('todayStatus').className = 'status-badge approved';
         
-        // 计算工作时长
         const duration = calculateDuration(checkinTime, checkoutTime);
         document.getElementById('workDuration').textContent = duration;
-        
-        const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
         
         showNotification('下班打卡成功！', 'success');
     }
