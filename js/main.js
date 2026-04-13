@@ -133,6 +133,18 @@ function initEventListeners() {
             }
         });
     }
+
+    // 审批列表复选框事件
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const approvalSection = this.closest('.approval-list-section');
+            if (approvalSection) {
+                const type = approvalSection.id === 'leaveApproval' ? 'leave' : 'exception';
+                updateSelectAllStatus(type);
+            }
+        });
+    });
 }
 
 // 更新打卡图标
@@ -160,38 +172,45 @@ function updateCheckinIcon(icon, method) {
 function handleCheckin() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
-    
+
     if (currentCheckinStatus === 'out') {
-        // 上班打卡
+        // 上班打卡 - 只能打一次
+        if (checkinTime !== null) {
+            showNotification('您今天已经打过上班卡了！', 'error');
+            return;
+        }
+
         checkinTime = now;
         currentCheckinStatus = 'in';
-        
+
         document.getElementById('checkInTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '工作中';
         document.getElementById('todayStatus').className = 'status-badge approved';
-        
+
         const btn = document.getElementById('checkinBtn');
         btn.querySelector('span').textContent = '下班打卡';
         btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
-        
+
         showNotification('上班打卡成功！', 'success');
     } else {
-        // 下班打卡
+        // 下班打卡 - 支持多次打卡，记录最后一次
         checkoutTime = now;
-        currentCheckinStatus = 'out';
-        
+        // 保持状态为'in'，允许继续下班打卡
+        // currentCheckinStatus 保持为 'in'
+
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
         document.getElementById('todayStatus').className = 'status-badge approved';
-        
+
         // 计算工作时长
         const duration = calculateDuration(checkinTime, checkoutTime);
         document.getElementById('workDuration').textContent = duration;
-        
+
+        // 按钮保持显示"下班打卡"，允许再次打卡
         const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
-        
+        btn.querySelector('span').textContent = '下班打卡';
+        btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
+
         showNotification('下班打卡成功！', 'success');
     }
 }
@@ -299,17 +318,19 @@ function calculateLeaveDays() {
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
     const leaveDays = document.getElementById('leaveDays');
-    
+
     if (startDate && endDate && leaveDays && startDate.value && endDate.value) {
         const start = new Date(startDate.value);
         const end = new Date(endDate.value);
-        
+
         if (end >= start) {
             const diffTime = Math.abs(end - start);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             leaveDays.value = diffDays + '天';
+            endDate.setCustomValidity('');
         } else {
             leaveDays.value = '';
+            endDate.setCustomValidity('结束日期不能早于开始日期');
         }
     }
 }
@@ -461,6 +482,29 @@ function batchReject() {
     
     showNotification(`已批量拒绝 ${checkedItems.length} 项`, 'success');
     updateBadgeCount();
+}
+
+// 全选/取消全选功能
+function toggleSelectAll(type) {
+    const selectAllCheckbox = document.getElementById(type === 'leave' ? 'selectAllLeave' : 'selectAllException');
+    const listId = type === 'leave' ? 'leaveApproval' : 'exceptionApproval';
+    const checkboxes = document.querySelectorAll(`#${listId} .item-checkbox`);
+
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+// 更新单个复选框时同步更新全选状态
+function updateSelectAllStatus(type) {
+    const listId = type === 'leave' ? 'leaveApproval' : 'exceptionApproval';
+    const selectAllCheckbox = document.getElementById(type === 'leave' ? 'selectAllLeave' : 'selectAllException');
+    const checkboxes = document.querySelectorAll(`#${listId} .item-checkbox`);
+    const checkedBoxes = document.querySelectorAll(`#${listId} .item-checkbox:checked`);
+
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = checkboxes.length > 0 && checkboxes.length === checkedBoxes.length;
+    }
 }
 
 // 更新徽章数量
