@@ -2,6 +2,7 @@
 let currentCheckinStatus = 'out'; // 'in' 或 'out'
 let checkinTime = null;
 let checkoutTime = null;
+let hasCheckedIn = false; // 是否已打过上班卡
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
@@ -133,6 +134,12 @@ function initEventListeners() {
             }
         });
     }
+
+    // 审批列表复选框监听
+    const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+    itemCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updateSelectAllState);
+    });
 }
 
 // 更新打卡图标
@@ -161,9 +168,10 @@ function handleCheckin() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
     
-    if (currentCheckinStatus === 'out') {
-        // 上班打卡
+    if (!hasCheckedIn) {
+        // 上班打卡（只能打一次）
         checkinTime = now;
+        hasCheckedIn = true;
         currentCheckinStatus = 'in';
         
         document.getElementById('checkInTime').textContent = timeString;
@@ -176,9 +184,8 @@ function handleCheckin() {
         
         showNotification('上班打卡成功！', 'success');
     } else {
-        // 下班打卡
+        // 下班打卡（可以多次打卡更新时间）
         checkoutTime = now;
-        currentCheckinStatus = 'out';
         
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
@@ -188,11 +195,7 @@ function handleCheckin() {
         const duration = calculateDuration(checkinTime, checkoutTime);
         document.getElementById('workDuration').textContent = duration;
         
-        const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
-        
-        showNotification('下班打卡成功！', 'success');
+        showNotification('下班打卡成功！时间已更新', 'success');
     }
 }
 
@@ -290,8 +293,29 @@ function initDateInputs() {
     const startDate = document.getElementById('startDate');
     const endDate = document.getElementById('endDate');
     
-    if (startDate) startDate.min = today;
-    if (endDate) endDate.min = today;
+    if (startDate) {
+        startDate.min = today;
+        startDate.addEventListener('change', function() {
+            if (endDate && this.value) {
+                endDate.min = this.value;
+                if (endDate.value && endDate.value < this.value) {
+                    endDate.value = this.value;
+                    showNotification('结束日期已自动调整为开始日期', 'info');
+                }
+            }
+            calculateLeaveDays();
+        });
+    }
+    if (endDate) {
+        endDate.min = today;
+        endDate.addEventListener('change', function() {
+            if (startDate && startDate.value && this.value < startDate.value) {
+                this.value = startDate.value;
+                showNotification('结束日期不能早于开始日期', 'error');
+            }
+            calculateLeaveDays();
+        });
+    }
 }
 
 // 计算请假天数
@@ -443,6 +467,7 @@ function batchApprove() {
     });
     
     showNotification(`已批量通过 ${checkedItems.length} 项`, 'success');
+    updateSelectAllState();
     updateBadgeCount();
 }
 
@@ -460,7 +485,35 @@ function batchReject() {
     });
     
     showNotification(`已批量拒绝 ${checkedItems.length} 项`, 'success');
+    updateSelectAllState();
     updateBadgeCount();
+}
+
+function toggleSelectAll(containerId, checkbox) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const checkboxes = container.querySelectorAll('.item-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = checkbox.checked;
+    });
+}
+
+function updateSelectAllState() {
+    const containers = ['leaveApproval', 'exceptionApproval'];
+    containers.forEach(containerId => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const checkboxes = container.querySelectorAll('.item-checkbox');
+        const checkedBoxes = container.querySelectorAll('.item-checkbox:checked');
+        const selectAllId = containerId === 'leaveApproval' ? 'selectAllLeave' : 'selectAllException';
+        const selectAllCheckbox = document.getElementById(selectAllId);
+        
+        if (selectAllCheckbox && checkboxes.length > 0) {
+            selectAllCheckbox.checked = checkboxes.length === checkedBoxes.length;
+        }
+    });
 }
 
 // 更新徽章数量

@@ -2166,3 +2166,27 @@ textarea.form-control {
         margin: 10px;
     }
 }
+
+.select-all-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--gray-50);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--gray-700);
+    transition: var(--transition);
+}
+
+.select-all-wrapper:hover {
+    background: var(--gray-100);
+}
+
+.select-all-wrapper input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary-color);
+    cursor: pointer;
+}
