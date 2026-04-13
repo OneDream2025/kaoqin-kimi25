@@ -123,6 +123,10 @@
                 <div class="approval-list-section" id="leaveApproval">
                     <div class="section-header">
                         <h3>请假审批</h3>
+                        <div class="select-all-wrapper">
+                            <input type="checkbox" id="selectAllLeave" class="select-all-checkbox" onchange="toggleSelectAll('leaveApproval')">
+                            <label for="selectAllLeave">全选</label>
+                        </div>
                         <div class="batch-actions">
                             <button class="btn-secondary" onclick="batchApprove()">
                                 <i class="fas fa-check"></i>
@@ -259,6 +263,20 @@
                 <div class="approval-list-section" id="exceptionApproval" style="display: none;">
                     <div class="section-header">
                         <h3>异常打卡审批</h3>
+                        <div class="select-all-wrapper">
+                            <input type="checkbox" id="selectAllException" class="select-all-checkbox" onchange="toggleSelectAll('exceptionApproval')">
+                            <label for="selectAllException">全选</label>
+                        </div>
+                        <div class="batch-actions">
+                            <button class="btn-secondary" onclick="batchApprove()">
+                                <i class="fas fa-check"></i>
+                                批量通过
+                            </button>
+                            <button class="btn-danger" onclick="batchReject()">
+                                <i class="fas fa-times"></i>
+                                批量拒绝
+                            </button>
+                        </div>
                     </div>
                     <div class="approval-list">
                         <div class="approval-item">
