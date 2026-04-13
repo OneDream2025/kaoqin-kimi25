@@ -161,8 +161,8 @@ function handleCheckin() {
     const now = new Date();
     const timeString = now.toLocaleTimeString('zh-CN', { hour12: false });
     
-    if (currentCheckinStatus === 'out') {
-        // 上班打卡
+    if (!checkinTime) {
+        // 第一次：上班打卡 - 只能打卡一次
         checkinTime = now;
         currentCheckinStatus = 'in';
         
@@ -175,10 +175,13 @@ function handleCheckin() {
         btn.style.background = 'linear-gradient(135deg, #ef4444, #f87171)';
         
         showNotification('上班打卡成功！', 'success');
+    } else if (currentCheckinStatus === 'out') {
+        // 已打过上班卡，不能再打上班卡
+        showNotification('上班已打卡，今天无需重复打卡', 'info');
     } else {
-        // 下班打卡
+        // 下班打卡 - 支持多次打卡，更新时间
         checkoutTime = now;
-        currentCheckinStatus = 'out';
+        currentCheckinStatus = 'in'; // 保持in状态，允许继续打下班卡更新
         
         document.getElementById('checkOutTime').textContent = timeString;
         document.getElementById('todayStatus').textContent = '已下班';
@@ -188,11 +191,8 @@ function handleCheckin() {
         const duration = calculateDuration(checkinTime, checkoutTime);
         document.getElementById('workDuration').textContent = duration;
         
-        const btn = document.getElementById('checkinBtn');
-        btn.querySelector('span').textContent = '上班打卡';
-        btn.style.background = 'linear-gradient(135deg, #4f46e5, #6366f1)';
-        
-        showNotification('下班打卡成功！', 'success');
+        const isUpdate = document.getElementById('checkOutTime').textContent !== '--:--' && checkoutTime;
+        showNotification('下班打卡成功！' + (isUpdate ? '时间已更新' : ''), 'success');
     }
 }
 
@@ -275,6 +275,18 @@ function closeLeaveModal() {
 }
 
 function submitLeave() {
+    const startDate = document.getElementById('startDate');
+    const endDate = document.getElementById('endDate');
+    
+    if (startDate.value && endDate.value) {
+        const start = new Date(startDate.value);
+        const end = new Date(endDate.value);
+        if (end < start) {
+            showNotification('结束日期不能小于开始日期', 'error');
+            return;
+        }
+    }
+    
     const form = document.getElementById('leaveForm');
     if (form && form.checkValidity()) {
         closeLeaveModal();
@@ -300,6 +312,10 @@ function calculateLeaveDays() {
     const endDate = document.getElementById('endDate');
     const leaveDays = document.getElementById('leaveDays');
     
+    if (startDate && startDate.value) {
+        endDate.min = startDate.value;
+    }
+    
     if (startDate && endDate && leaveDays && startDate.value && endDate.value) {
         const start = new Date(startDate.value);
         const end = new Date(endDate.value);
@@ -310,6 +326,8 @@ function calculateLeaveDays() {
             leaveDays.value = diffDays + '天';
         } else {
             leaveDays.value = '';
+            showNotification('结束日期不能小于开始日期', 'error');
+            endDate.value = '';
         }
     }
 }
@@ -532,6 +550,54 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// 全选功能
+function toggleSelectAll(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    
+    const selectAllCheckbox = section.querySelector('.select-all-checkbox');
+    const itemCheckboxes = section.querySelectorAll('.item-checkbox');
+    
+    itemCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+    });
+}
+
+// 监听单个复选框变化，更新全选状态
+function initCheckboxListeners() {
+    const sections = ['leaveApproval', 'exceptionApproval'];
+    sections.forEach(sectionId => {
+        const section = document.getElementById(sectionId);
+        if (!section) return;
+        
+        const itemCheckboxes = section.querySelectorAll('.item-checkbox');
+        const selectAllCheckbox = section.querySelector('.select-all-checkbox');
+        
+        itemCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const allChecked = Array.from(itemCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(itemCheckboxes).some(cb => cb.checked);
+                
+                if (allChecked) {
+                    selectAllCheckbox.checked = true;
+                    selectAllCheckbox.indeterminate = false;
+                } else if (someChecked) {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = true;
+                } else {
+                    selectAllCheckbox.checked = false;
+                    selectAllCheckbox.indeterminate = false;
+                }
+            });
+        });
+    });
+}
+
+// 在初始化事件监听器中添加复选框监听
+document.addEventListener('DOMContentLoaded', function() {
+    initCheckboxListeners();
+});
 
 // 点击弹窗外部关闭
 window.onclick = function(event) {
