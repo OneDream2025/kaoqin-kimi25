@@ -5,12 +5,74 @@ let checkoutTime = null;
 
 // 页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', function() {
+    checkLoginStatus();
+    loadCurrentUser();
     initCurrentTime();
     initLocation();
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
 });
+
+// 检查登录状态
+function checkLoginStatus() {
+    const currentUser = JSON.parse(localStorage.getItem('attendance_current_user'));
+    const publicPages = ['login.html', 'register.html'];
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // 如果不在公共页面且未登录，跳转到登录页
+    if (!publicPages.includes(currentPage) && !currentUser) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    
+    // 如果已登录且在登录/注册页，跳转到首页
+    if (publicPages.includes(currentPage) && currentUser) {
+        window.location.href = 'index.html';
+        return false;
+    }
+    
+    return true;
+}
+
+// 加载当前用户信息
+function loadCurrentUser() {
+    const currentUser = JSON.parse(localStorage.getItem('attendance_current_user'));
+    if (!currentUser) return;
+    
+    // 更新用户名
+    const userNameEl = document.getElementById('currentUserName');
+    if (userNameEl) {
+        userNameEl.textContent = currentUser.name || currentUser.username;
+    }
+    
+    // 更新用户角色
+    const userRoleEl = document.getElementById('currentUserRole');
+    if (userRoleEl) {
+        const roleText = getRoleText(currentUser.role);
+        const deptText = currentUser.department || '';
+        const positionText = currentUser.position || roleText;
+        userRoleEl.textContent = deptText ? `${deptText} - ${positionText}` : positionText;
+    }
+}
+
+// 获取角色文本
+function getRoleText(role) {
+    const roleMap = {
+        'admin': '管理员',
+        'manager': '部门经理',
+        'employee': '普通员工'
+    };
+    return roleMap[role] || role;
+}
+
+// 退出登录
+function logout() {
+    if (confirm('确定要退出登录吗？')) {
+        localStorage.removeItem('attendance_current_user');
+        window.location.href = 'login.html';
+    }
+}
 
 // 初始化当前时间显示
 function initCurrentTime() {
