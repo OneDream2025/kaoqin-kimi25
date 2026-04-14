@@ -1,15 +1,69 @@
 // 全局变量
-let currentCheckinStatus = 'out'; // 'in' 或 'out'
+let currentCheckinStatus = 'out';
 let checkinTime = null;
 let checkoutTime = null;
+let currentUser = null;
+let editingUserId = null;
+let deletingUserId = null;
 
-// 页面加载完成后初始化
+const DEFAULT_USERS = [
+    { id: 1, name: '张三', username: 'zhangsan', email: 'zhangsan@example.com', password: '123456', department: '技术部', position: '工程师', phone: '13800138001', role: 'user', status: 'active', createdAt: '2024-01-15' },
+    { id: 2, name: '李四', username: 'lisi', email: 'lisi@example.com', password: '123456', department: '产品部', position: '产品经理', phone: '13800138002', role: 'user', status: 'active', createdAt: '2024-01-20' },
+    { id: 3, name: '王五', username: 'wangwu', email: 'wangwu@example.com', password: '123456', department: '运营部', position: '运营专员', phone: '13800138003', role: 'user', status: 'active', createdAt: '2024-02-01' },
+    { id: 4, name: '赵六', username: 'zhaoliu', email: 'zhaoliu@example.com', password: '123456', department: '市场部', position: '市场专员', phone: '13800138004', role: 'user', status: 'active', createdAt: '2024-02-10' },
+    { id: 5, name: '孙七', username: 'sunqi', email: 'sunqi@example.com', password: '123456', department: '人事部', position: '人事专员', phone: '13800138005', role: 'user', status: 'active', createdAt: '2024-02-15' },
+    { id: 6, name: '周八', username: 'zhouba', email: 'zhouba@example.com', password: '123456', department: '财务部', position: '会计', phone: '13800138006', role: 'user', status: 'active', createdAt: '2024-02-20' },
+    { id: 7, name: '吴九', username: 'wujiu', email: 'wujiu@example.com', password: '123456', department: '技术部', position: '高级工程师', phone: '13800138007', role: 'user', status: 'active', createdAt: '2024-03-01' },
+    { id: 8, name: '管理员', username: 'admin', email: 'admin@example.com', password: 'admin123', department: '人事部', position: '主管', phone: '13800138000', role: 'admin', status: 'active', createdAt: '2024-01-01' }
+];
+
+function initUsers() {
+    if (!localStorage.getItem('users')) {
+        localStorage.setItem('users', JSON.stringify(DEFAULT_USERS));
+    }
+}
+
+function getUsers() {
+    initUsers();
+    return JSON.parse(localStorage.getItem('users')) || [];
+}
+
+function saveUsers(users) {
+    localStorage.setItem('users', JSON.stringify(users));
+}
+
+function getCurrentUser() {
+    const userData = localStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
+}
+
+function setCurrentUser(user) {
+    if (user) {
+        localStorage.setItem('currentUser', JSON.stringify(user));
+    } else {
+        localStorage.removeItem('currentUser');
+    }
+}
+
+function isLoggedIn() {
+    return getCurrentUser() !== null;
+}
+
+function isAdmin() {
+    const user = getCurrentUser();
+    return user && user.role === 'admin';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    initUsers();
     initCurrentTime();
     initLocation();
     initEventListeners();
     initDateInputs();
     calculateLeaveDays();
+    initAuthPages();
+    initUserManagement();
+    checkAuthStatus();
 });
 
 // 初始化当前时间显示
@@ -604,4 +658,475 @@ window.onclick = function(event) {
     if (event.target.classList.contains('modal')) {
         event.target.classList.remove('active');
     }
+}
+
+function initAuthPages() {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', handleLogin);
+    }
+    
+    const registerForm = document.getElementById('registerForm');
+    if (registerForm) {
+        registerForm.addEventListener('submit', handleRegister);
+    }
+}
+
+function handleLogin(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
+    
+    if (!username || !password) {
+        showNotification('请输入用户名和密码', 'error');
+        return;
+    }
+    
+    const users = getUsers();
+    const user = users.find(u => 
+        (u.username === username || u.email === username) && u.password === password
+    );
+    
+    if (user) {
+        if (user.status === 'inactive') {
+            showNotification('该账户已离职，无法登录', 'error');
+            return;
+        }
+        
+        const { password: _, ...safeUser } = user;
+        setCurrentUser(safeUser);
+        
+        if (rememberMe) {
+            localStorage.setItem('rememberMe', 'true');
+        }
+        
+        showNotification('登录成功！', 'success');
+        setTimeout(() => {
+            window.location.href = 'index.html';
+        }, 500);
+    } else {
+        showNotification('用户名或密码错误', 'error');
+    }
+}
+
+function handleRegister(e) {
+    e.preventDefault();
+    
+    const name = document.getElementById('regName').value.trim();
+    const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirmPassword = document.getElementById('regConfirmPassword').value;
+    const department = document.getElementById('regDepartment').value;
+    const position = document.getElementById('regPosition').value.trim();
+    const phone = document.getElementById('regPhone').value.trim();
+    const agreeTerms = document.getElementById('agreeTerms').checked;
+    
+    if (!name || !username || !email || !password || !department) {
+        showNotification('请填写所有必填项', 'error');
+        return;
+    }
+    
+    if (password.length < 6) {
+        showNotification('密码至少需要6位', 'error');
+        return;
+    }
+    
+    if (password !== confirmPassword) {
+        showNotification('两次输入的密码不一致', 'error');
+        return;
+    }
+    
+    if (!agreeTerms) {
+        showNotification('请阅读并同意用户协议', 'error');
+        return;
+    }
+    
+    const users = getUsers();
+    
+    if (users.some(u => u.username === username)) {
+        showNotification('用户名已存在', 'error');
+        return;
+    }
+    
+    if (users.some(u => u.email === email)) {
+        showNotification('邮箱已被注册', 'error');
+        return;
+    }
+    
+    const newUser = {
+        id: Math.max(...users.map(u => u.id), 0) + 1,
+        name,
+        username,
+        email,
+        password,
+        department,
+        position: position || '员工',
+        phone,
+        role: 'user',
+        status: 'active',
+        createdAt: new Date().toISOString().split('T')[0]
+    };
+    
+    users.push(newUser);
+    saveUsers(users);
+    
+    showNotification('注册成功！请登录', 'success');
+    setTimeout(() => {
+        window.location.href = 'login.html';
+    }, 1000);
+}
+
+function handleLogout() {
+    setCurrentUser(null);
+    localStorage.removeItem('rememberMe');
+    showNotification('已退出登录', 'success');
+    setTimeout(() => {
+        window.location.href = 'login.html';
+    }, 500);
+}
+
+function togglePassword(inputId, btn) {
+    const input = document.getElementById(inputId);
+    const icon = btn.querySelector('i');
+    
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+function checkAuthStatus() {
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const publicPages = ['login.html', 'register.html'];
+    const adminPages = ['users.html'];
+    
+    if (isLoggedIn()) {
+        if (publicPages.includes(currentPage)) {
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        if (adminPages.includes(currentPage) && !isAdmin()) {
+            showNotification('您没有权限访问此页面', 'error');
+            window.location.href = 'index.html';
+            return;
+        }
+        
+        updateUserInfo();
+    } else {
+        if (!publicPages.includes(currentPage)) {
+            window.location.href = 'login.html';
+        }
+    }
+}
+
+function updateUserInfo() {
+    const user = getCurrentUser();
+    if (!user) return;
+    
+    const userNames = document.querySelectorAll('.user-name');
+    const userRoles = document.querySelectorAll('.user-role');
+    
+    userNames.forEach(el => {
+        el.textContent = user.name;
+    });
+    
+    userRoles.forEach(el => {
+        el.textContent = `${user.department} - ${user.position || '员工'}`;
+    });
+    
+    const adminMenus = document.querySelectorAll('.admin-only');
+    if (user.role === 'admin') {
+        adminMenus.forEach(el => {
+            el.style.display = 'list-item';
+        });
+    }
+}
+
+function initUserManagement() {
+    if (!document.getElementById('userTableBody')) return;
+    
+    renderUserTable();
+    updateStats();
+}
+
+function renderUserTable(filteredUsers = null) {
+    const tbody = document.getElementById('userTableBody');
+    if (!tbody) return;
+    
+    const users = filteredUsers || getUsers();
+    
+    tbody.innerHTML = users.map(user => `
+        <tr>
+            <td>
+                <div class="user-cell">
+                    <div class="user-avatar-small">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info-cell">
+                        <span class="user-name-cell">${user.name}</span>
+                        <span class="user-username">@${user.username}</span>
+                    </div>
+                </div>
+            </td>
+            <td>${user.department}</td>
+            <td>${user.position || '-'}</td>
+            <td>${user.email}</td>
+            <td>${user.phone || '-'}</td>
+            <td>
+                <span class="role-tag ${user.role}">${user.role === 'admin' ? '管理员' : '普通用户'}</span>
+            </td>
+            <td>
+                <span class="status-tag ${user.status}">${user.status === 'active' ? '在职' : '离职'}</span>
+            </td>
+            <td>
+                <div class="action-btns">
+                    <button class="btn-icon" onclick="editUser(${user.id})" title="编辑">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn-icon" onclick="deleteUser(${user.id})" title="删除">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </td>
+        </tr>
+    `).join('');
+    
+    document.getElementById('userCount').textContent = `共 ${users.length} 条记录`;
+}
+
+function updateStats() {
+    const users = getUsers();
+    
+    document.getElementById('totalUsers').textContent = users.length;
+    document.getElementById('activeUsers').textContent = users.filter(u => u.status === 'active').length;
+    document.getElementById('inactiveUsers').textContent = users.filter(u => u.status === 'inactive').length;
+    
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    document.getElementById('newUsers').textContent = users.filter(u => 
+        u.createdAt && u.createdAt.startsWith(currentMonth)
+    ).length;
+}
+
+function searchUsers() {
+    const keyword = document.getElementById('searchUser').value.toLowerCase().trim();
+    const users = getUsers();
+    
+    if (!keyword) {
+        filterUsers();
+        return;
+    }
+    
+    const filtered = users.filter(user => 
+        user.name.toLowerCase().includes(keyword) ||
+        user.username.toLowerCase().includes(keyword) ||
+        user.email.toLowerCase().includes(keyword)
+    );
+    
+    renderUserTable(filtered);
+}
+
+function filterUsers() {
+    const department = document.getElementById('filterDepartment').value;
+    const status = document.getElementById('filterStatus').value;
+    const role = document.getElementById('filterRole').value;
+    const keyword = document.getElementById('searchUser').value.toLowerCase().trim();
+    
+    let users = getUsers();
+    
+    if (department) {
+        users = users.filter(u => u.department === department);
+    }
+    
+    if (status) {
+        users = users.filter(u => u.status === status);
+    }
+    
+    if (role) {
+        users = users.filter(u => u.role === role);
+    }
+    
+    if (keyword) {
+        users = users.filter(user => 
+            user.name.toLowerCase().includes(keyword) ||
+            user.username.toLowerCase().includes(keyword) ||
+            user.email.toLowerCase().includes(keyword)
+        );
+    }
+    
+    renderUserTable(users);
+}
+
+function showAddUserModal() {
+    editingUserId = null;
+    document.getElementById('userModalTitle').textContent = '添加用户';
+    document.getElementById('userForm').reset();
+    document.getElementById('userId').value = '';
+    document.getElementById('userPassword').placeholder = '至少6位密码';
+    document.getElementById('passwordRequired').style.display = 'inline';
+    document.getElementById('userModal').classList.add('active');
+}
+
+function editUser(id) {
+    const users = getUsers();
+    const user = users.find(u => u.id === id);
+    
+    if (!user) {
+        showNotification('用户不存在', 'error');
+        return;
+    }
+    
+    editingUserId = id;
+    document.getElementById('userModalTitle').textContent = '编辑用户';
+    document.getElementById('userId').value = user.id;
+    document.getElementById('userName').value = user.name;
+    document.getElementById('userUsername').value = user.username;
+    document.getElementById('userEmail').value = user.email;
+    document.getElementById('userPassword').value = '';
+    document.getElementById('userPassword').placeholder = '留空则不修改密码';
+    document.getElementById('passwordRequired').style.display = 'none';
+    document.getElementById('userDepartment').value = user.department;
+    document.getElementById('userPosition').value = user.position || '';
+    document.getElementById('userPhone').value = user.phone || '';
+    document.getElementById('userRole').value = user.role;
+    document.getElementById('userStatus').value = user.status;
+    
+    document.getElementById('userModal').classList.add('active');
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').classList.remove('active');
+    editingUserId = null;
+}
+
+function saveUser() {
+    const id = document.getElementById('userId').value;
+    const name = document.getElementById('userName').value.trim();
+    const username = document.getElementById('userUsername').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
+    const password = document.getElementById('userPassword').value;
+    const department = document.getElementById('userDepartment').value;
+    const position = document.getElementById('userPosition').value.trim();
+    const phone = document.getElementById('userPhone').value.trim();
+    const role = document.getElementById('userRole').value;
+    const status = document.getElementById('userStatus').value;
+    
+    if (!name || !username || !email || !department || !role) {
+        showNotification('请填写所有必填项', 'error');
+        return;
+    }
+    
+    let users = getUsers();
+    
+    if (editingUserId) {
+        const index = users.findIndex(u => u.id === editingUserId);
+        if (index === -1) {
+            showNotification('用户不存在', 'error');
+            return;
+        }
+        
+        if (users.some(u => u.username === username && u.id !== editingUserId)) {
+            showNotification('用户名已存在', 'error');
+            return;
+        }
+        
+        if (users.some(u => u.email === email && u.id !== editingUserId)) {
+            showNotification('邮箱已被使用', 'error');
+            return;
+        }
+        
+        users[index] = {
+            ...users[index],
+            name,
+            username,
+            email,
+            department,
+            position,
+            phone,
+            role,
+            status
+        };
+        
+        if (password) {
+            if (password.length < 6) {
+                showNotification('密码至少需要6位', 'error');
+                return;
+            }
+            users[index].password = password;
+        }
+        
+        saveUsers(users);
+        showNotification('用户信息已更新', 'success');
+    } else {
+        if (!password) {
+            showNotification('请输入密码', 'error');
+            return;
+        }
+        
+        if (password.length < 6) {
+            showNotification('密码至少需要6位', 'error');
+            return;
+        }
+        
+        if (users.some(u => u.username === username)) {
+            showNotification('用户名已存在', 'error');
+            return;
+        }
+        
+        if (users.some(u => u.email === email)) {
+            showNotification('邮箱已被注册', 'error');
+            return;
+        }
+        
+        const newUser = {
+            id: Math.max(...users.map(u => u.id), 0) + 1,
+            name,
+            username,
+            email,
+            password,
+            department,
+            position: position || '员工',
+            phone,
+            role,
+            status,
+            createdAt: new Date().toISOString().split('T')[0]
+        };
+        
+        users.push(newUser);
+        saveUsers(users);
+        showNotification('用户添加成功', 'success');
+    }
+    
+    closeUserModal();
+    renderUserTable();
+    updateStats();
+}
+
+function deleteUser(id) {
+    deletingUserId = id;
+    document.getElementById('deleteConfirmModal').classList.add('active');
+}
+
+function closeDeleteModal() {
+    document.getElementById('deleteConfirmModal').classList.remove('active');
+    deletingUserId = null;
+}
+
+function confirmDelete() {
+    if (!deletingUserId) return;
+    
+    let users = getUsers();
+    users = users.filter(u => u.id !== deletingUserId);
+    saveUsers(users);
+    
+    closeDeleteModal();
+    renderUserTable();
+    updateStats();
+    showNotification('用户已删除', 'success');
 }

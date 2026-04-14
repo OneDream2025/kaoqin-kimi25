@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>用户管理 - 考勤管理系统</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-clock"></i>
+                    <span>考勤系统</span>
+                </div>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html">
+                        <i class="fas fa-fingerprint"></i>
+                        <span>打卡签到</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="leave.html">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>请假申请</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="history.html">
+                        <i class="fas fa-history"></i>
+                        <span>打卡记录</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="approval.html">
+                        <i class="fas fa-check-circle"></i>
+                        <span>审批管理</span>
+                    </a>
+                </li>
+                <li class="nav-item active">
+                    <a href="users.html">
+                        <i class="fas fa-users"></i>
+                        <span>用户管理</span>
+                    </a>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-details">
+                        <p class="user-name">管理员</p>
+                        <p class="user-role">人事部 - 主管</p>
+                    </div>
+                    <button class="btn-icon logout-btn" onclick="handleLogout()" title="退出登录">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <header class="top-header">
+                <h1 class="page-title">用户管理</h1>
+                <div class="header-actions">
+                    <div class="current-time" id="currentTime"></div>
+                </div>
+            </header>
+
+            <div class="content-wrapper">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon normal">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalUsers">8</span>
+                            <span class="stat-label">总用户数</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon late">
+                            <i class="fas fa-user-check"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="activeUsers">6</span>
+                            <span class="stat-label">在职用户</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon early">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="newUsers">2</span>
+                            <span class="stat-label">本月新增</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon absent">
+                            <i class="fas fa-user-times"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="inactiveUsers">0</span>
+                            <span class="stat-label">已离职</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-bar">
+                    <div class="filter-group">
+                        <label>搜索用户</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-search"></i>
+                            <input type="text" class="form-control" id="searchUser" placeholder="搜索姓名/用户名/邮箱" oninput="searchUsers()">
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <label>部门</label>
+                        <select class="form-control" id="filterDepartment" onchange="filterUsers()">
+                            <option value="">全部部门</option>
+                            <option value="技术部">技术部</option>
+                            <option value="产品部">产品部</option>
+                            <option value="运营部">运营部</option>
+                            <option value="人事部">人事部</option>
+                            <option value="财务部">财务部</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>状态</label>
+                        <select class="form-control" id="filterStatus" onchange="filterUsers()">
+                            <option value="">全部状态</option>
+                            <option value="active">在职</option>
+                            <option value="inactive">离职</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label>角色</label>
+                        <select class="form-control" id="filterRole" onchange="filterUsers()">
+                            <option value="">全部角色</option>
+                            <option value="admin">管理员</option>
+                            <option value="user">普通用户</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="showAddUserModal()">
+                        <i class="fas fa-plus"></i>
+                        添加用户
+                    </button>
+                </div>
+
+                <div class="history-table-section">
+                    <div class="table-header">
+                        <h3>用户列表</h3>
+                        <span class="records-count" id="userCount">共 8 条记录</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>用户信息</th>
+                                    <th>部门</th>
+                                    <th>职位</th>
+                                    <th>邮箱</th>
+                                    <th>手机号</th>
+                                    <th>角色</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="pagination" id="pagination">
+                        <button class="page-btn" disabled>
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="page-btn active">1</button>
+                        <button class="page-btn">2</button>
+                        <button class="page-btn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="userModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="userModalTitle">添加用户</h3>
+                <button class="close-btn" onclick="closeUserModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <input type="hidden" id="userId">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>姓名 <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="userName" placeholder="请输入真实姓名" required>
+                        </div>
+                        <div class="form-group">
+                            <label>用户名 <span class="required">*</span></label>
+                            <input type="text" class="form-control" id="userUsername" placeholder="请输入用户名" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>邮箱 <span class="required">*</span></label>
+                            <input type="email" class="form-control" id="userEmail" placeholder="请输入邮箱地址" required>
+                        </div>
+                        <div class="form-group">
+                            <label>密码 <span class="required" id="passwordRequired">*</span></label>
+                            <input type="password" class="form-control" id="userPassword" placeholder="留空则不修改密码">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>部门 <span class="required">*</span></label>
+                            <select class="form-control" id="userDepartment" required>
+                                <option value="">请选择部门</option>
+                                <option value="技术部">技术部</option>
+                                <option value="产品部">产品部</option>
+                                <option value="运营部">运营部</option>
+                                <option value="市场部">市场部</option>
+                                <option value="人事部">人事部</option>
+                                <option value="财务部">财务部</option>
+                                <option value="行政部">行政部</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>职位</label>
+                            <input type="text" class="form-control" id="userPosition" placeholder="请输入职位">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>手机号</label>
+                            <input type="tel" class="form-control" id="userPhone" placeholder="请输入手机号码">
+                        </div>
+                        <div class="form-group">
+                            <label>角色 <span class="required">*</span></label>
+                            <select class="form-control" id="userRole" required>
+                                <option value="">请选择角色</option>
+                                <option value="admin">管理员</option>
+                                <option value="user">普通用户</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select class="form-control" id="userStatus">
+                            <option value="active">在职</option>
+                            <option value="inactive">离职</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeUserModal()">取消</button>
+                <button class="btn-primary" onclick="saveUser()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="deleteConfirmModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>确认删除</h3>
+                <button class="close-btn" onclick="closeDeleteModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-confirm">
+                    <div class="delete-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h4>确定要删除该用户吗？</h4>
+                    <p>此操作不可恢复，请谨慎操作</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeDeleteModal()">取消</button>
+                <button class="btn-danger" onclick="confirmDelete()">确认删除</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
